@@ -1,5 +1,133 @@
-# Register index
+# lis-taxonomy-register
 
-Shared package for the register index.
+Part of the Livestock Information Service (LIS), which lets livestock keepers, owners, agents and
+delegates record and manage their animals.
 
-Install dependencies for this package locally with `npm install` from this directory.
+`@defra/lis-taxonomy-register` is a shared npm package that holds the definition of the "register"
+taxonomy: registering livestock and the checks that go with it.
+
+Used by:
+
+- apps: [lis-apps-cattle-register](https://github.com/DEFRA/lis-apps-cattle-register) (declared as a dependency, not yet imported)
+
+## Installation
+
+```bash
+npm install @defra/lis-taxonomy-register
+```
+
+The package has no peer dependencies.
+
+## Usage
+
+LIS splits each microsite into a taxonomy and a species. A taxonomy package says which task the
+microsite does, such as home, register, move or death. A species package says which animal it is
+for. A microsite app combines one of each.
+
+The only export is `taxonomy`, the register taxonomy definition:
+
+```js
+import { taxonomy } from '@defra/lis-taxonomy-register'
+
+// {
+//   id: 'register',
+//   label: 'Register',
+//   summary: 'Capture livestock registration activity and related checks.'
+// }
+```
+
+[lis-apps-cattle-register](https://github.com/DEFRA/lis-apps-cattle-register) uses `taxonomy.id` together with the species `id` from
+`@defra/lis-species-cattle` to build the microsite path:
+
+```js
+import { buildMicrositePath } from '@defra/lis-infra-ui-services'
+import { taxonomy } from '@defra/lis-taxonomy-register'
+import { species } from '@defra/lis-species-cattle'
+
+const path = buildMicrositePath(taxonomy.id, species.id)
+```
+
+## Prerequisites
+
+- Node.js 24 (see `.nvmrc`, use `nvm use`)
+- To check changes against a consuming app: a local clone of [lis-dev](https://github.com/DEFRA/lis-dev) with its one-time setup done
+
+## Setup
+
+```bash
+nvm use
+npm install
+```
+
+There are no tools to install beyond `npm install`. Tests use [Vitest](https://vitest.dev/).
+
+## Running in development
+
+This is a library, so it has no server of its own. To try a change in a consuming app without
+publishing, link the local copy into the lis-dev stack:
+
+```bash
+cd lis-dev
+.bin/sideload link taxonomy/register   # every installed copy now points at this repo
+.bin/sideload up cattle-register  # optional: run a consumer locally with hot reload
+.bin/sideload unlink taxonomy/register # when done
+```
+
+## Running tests
+
+```bash
+npm test                 # unit tests
+npm run test:coverage    # with coverage
+npm run lint             # ESLint
+npm run format:check     # Prettier
+npm run security-audit   # audit-ci
+```
+
+Before releasing a change, also run the tests of each consuming repo against the linked package.
+
+## Pipelines
+
+The workflows in `.github/workflows` call the shared composite actions in
+[lis-github-actions](https://github.com/DEFRA/lis-github-actions), pinned by commit SHA. Every run
+calculates the version from git tags (SemVer), then runs **build, test and pack** (security
+audit, format check, lint, tests, `npm pack`) alongside a **Sonar analysis**.
+
+- **Pull request to `main`** (`pull-request.yml`): the checks above. The `Pull Request Validation` job is the required check.
+- **Push to a `feature/` or `hotfix/` branch** (`prerelease.yml`): the checks above, then a prerelease tag such as `0.2.0-LREG-123-alpha.1.1` if the Sonar quality gate passes.
+- **Merge to `main`** (`release.yml`): the checks above on the merge commit, then a release tag if the quality gate passes.
+- **Tag push** (`publish.yml`): publishes the package built for that tag to [npm](https://www.npmjs.com/package/@defra/lis-taxonomy-register) with trusted publishing, under the `alpha` dist-tag for prereleases and `latest` for releases.
+
+After a merge, wait for the publish job to finish before bumping the package in consuming repos.
+
+## Branching policy
+
+The repo uses mainline development. Branch from `main` and name the branch:
+
+- `feature/LREG-<ticket>-<short-kebab-description>`
+- `hotfix/LREG-<ticket>-<short-kebab-description>`
+
+`LREG` must be uppercase, because the GitHub ruleset rejects other branch names. Rebase onto `main`
+rather than merging `main` in.
+
+## Contributing to this project
+
+- Follow the [Defra software development standards](https://github.com/DEFRA/software-development-standards).
+- Run `npm run git:pre-commit-hook` before committing. It runs the security audit, format check and lint, the same checks CI runs first.
+- Open a pull request against `main` using the PR template. CI must pass and the Sonar quality gate must be green before merge.
+- Feature branches bump the minor version and hotfix branches the patch version. While the package is on 0.x, a breaking change to the public API ships as a minor version, so call it out in the PR so consumers can update.
+
+## Licence
+
+THIS INFORMATION IS LICENSED UNDER THE CONDITIONS OF THE OPEN GOVERNMENT LICENCE found at:
+
+<http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3>
+
+The following attribution statement MUST be cited in your products and applications when using this information.
+
+> Contains public sector information licensed under the Open Government licence v3
+
+### About the licence
+
+The Open Government Licence (OGL) was developed by the Controller of His Majesty's Stationery Office (HMSO) to enable information providers in the public sector to license the use and re-use of their information under a common open licence.
+
+It is designed to encourage use and re-use of information freely and flexibly, with only a few conditions.
